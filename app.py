@@ -14,34 +14,60 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-class User(db.Model):
-    user_id = db.Column(db.Integer, primary_key=True)
-    user_name = db.Column(db.String(255), nullable=False)
-    user_email = db.Column(db.String(255), nullable=False)
-    user_password = db.Column(db.String(255), nullable=False)
+
+class student(db.Model):
+    student_id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    course = db.Column(db.String(255), nullable=False)
+    age = db.Column(db.Integer, nullable=False)
 
     def dictionary(self):
-        return {
-            "user_id": self.user_id,
-            "user_name": self.user_name,
-            "user_email": self.user_email,
-            "user_password": self.user_password
-        }
+        return {"student_id": self.student_id, "name": self.name, "course": self.course, "age": self.age}
+
+
 
 with app.app_context():
     db.create_all()
 
-@app.route('/users', methods=['POST'])
-def create_user():
+
+@app.route('/students', methods=['POST'])
+def create_student():
     data = request.get_json()
-    new_user = User(
-        user_name=data['user_name'],
-        user_email=data['user_email'],
-        user_password=data['user_password']
-    )
-    db.session.add(new_user)
+    new_student = student(name=data['name'], course=data['course'], age=data['age'])
+    db.session.add(new_student)
     db.session.commit()
-    return jsonify(new_user.dictionary()), 201
+    return jsonify(new_student.dictionary()), 201
+
+
+@app.route('/students', methods=['GET'])
+def get_students():
+    students = student.query.all()
+    return jsonify([student.dictionary() for student in students])
+
+
+@app.route('/students/<int:student_id>', methods=['GET'])
+def get_student(student_id):
+    result = student.query.get_or_404(student_id)
+    return jsonify(result.dictionary())
+
+
+@app.route('/students/<int:student_id>', methods=['PUT'])
+def update_student(student_id):
+    data = request.get_json()
+    result = student.query.get_or_404(student_id)
+    result.name = data.get('name', result.name)
+    result.course = data.get('course', result.course)
+    result.age = data.get('age', result.age)
+    db.session.commit()
+    return jsonify(result.dictionary())
+
+
+@app.route('/students/<int:student_id>', methods=['DELETE'])
+def delete_student(student_id):
+    result = student.query.get_or_404(student_id)
+    db.session.delete(result)
+    db.session.commit()
+    return jsonify({"message": "student deleted successfully"})
 
 
 if __name__ == '__main__':
